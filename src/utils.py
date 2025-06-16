@@ -12,10 +12,12 @@ def gen_old(matrix) -> dict[str, RichResult]:
     old = gen_oldver(matrix)
 
     for vinfo in old:
-        b_variants = vinfo.board_variants if vinfo.board_variants else [
+        b_variants = vinfo.board_variants + ['generic'] if vinfo.board_variants else [
             "generic"]
         if vinfo.version is None:
             continue
+        if vinfo.variant is None:
+            vinfo.variant = "null"
         for b_variant in b_variants:
             res[f"{vinfo.vendor}-{b_variant}-{vinfo.system}-{vinfo.variant}"] = RichResult(
                 version=vinfo.version

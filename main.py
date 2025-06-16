@@ -88,7 +88,7 @@ def main():
     for prod, ver in upd.items():
         if ver['old'] is None:
             logger.info(
-                "Found new version for %s: %s", prod, ver['new']['version'])
+                "Found new version for %s: %s", prod, ver['new'].version)
             has_update = True
         elif ver['new'] is None:
             # logger.info(
