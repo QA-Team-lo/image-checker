@@ -1,0 +1,9 @@
+milkv-duo-generic-buildroot-v1:
+  source: "github"
+  github: "milkv-duo/duo-buildroot-sdk"
+  use_latest_release: true
+
+milkv-duo-generic-buildroot-v2:
+  source: "github"
+  github: "milkv-duo/duo-buildroot-sdk-v2"
+  use_latest_release: true

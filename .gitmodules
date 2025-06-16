@@ -1,0 +1,3 @@
+[submodule "support-matrix"]
+	path = matrix
+	url = https://github.com/ruyisdk/support-matrix.git
