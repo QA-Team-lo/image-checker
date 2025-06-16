@@ -1,0 +1,46 @@
+name: Version Checker
+
+on:
+  workflow_dispatch:
+  pull_request:
+  schedule:
+    - cron: "0 0 * * *" # Runs daily at midnight
+  push:
+
+jobs:
+  check_version:
+    name: Check Version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Update Submodules
+        run: |
+          git submodule update --init --recursive
+          ls ./matrix
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.13"
+          cache: "pip"
+          cache-dependency-path: "**/requirements*.txt"
+
+      - name: Install Dependencies
+        run: |
+          pip install -qr requirements.txt
+
+      - name: Check Version
+        run: |
+          python3 main.py
+
+      - name: Output Results
+        run: |
+          cat report.md >> $GITHUB_STEP_SUMMARY
+          echo "Version check completed. See the summary above for details." >> $GITHUB_STEP_SUMMARY
+      - name: Upload Report
+        uses: actions/upload-artifact@v4
+        with:
+          path: ./report.md
+
