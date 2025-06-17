@@ -1,0 +1,4 @@
+bit-brick-k1-generic-armbian-minimal:
+  source: regex
+  url: https://mirror.iscas.ac.cn/armbian-releases/bananapif3/archive/
+  regex: <a href="Armbian_(\d+\.\d+\.\d+).*" title=".*">.*</a>

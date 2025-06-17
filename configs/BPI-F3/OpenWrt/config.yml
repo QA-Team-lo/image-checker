@@ -1,0 +1,4 @@
+bpi-f3-generic-openwrt-null:
+  source: regex
+  url: https://archive.spacemit.com/openwrt/releases/
+  regex: <a href="(.*)/">\1/</a>

@@ -1,0 +1,9 @@
+bpi-f3-generic-bianbu-minimal:
+  source: regex
+  url: https://archive.spacemit.com/image/k1/version/bianbu/
+  regex: <a href="(.*)/">\1/</a>
+
+bpi-f3-generic-bianbu-desktop:
+  source: regex
+  url: https://archive.spacemit.com/image/k1/version/bianbu/
+  regex: <a href="(.*)/">\1/</a>

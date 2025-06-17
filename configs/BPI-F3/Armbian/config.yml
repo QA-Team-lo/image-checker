@@ -1,0 +1,7 @@
+bpi-f3-generic-armbian-noble:
+  source: htmlparser
+  url: https://mirror.iscas.ac.cn/armbian-releases/bananapif3/archive/
+  xpath: //table/tbody/tr/td/a
+  exclude_regex: 'Parent directory/'
+  from_pattern: 'Armbian_(\d+\.\d+\.\d+).*'
+  to_pattern: '\1'

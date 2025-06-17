@@ -180,7 +180,7 @@ def load_all_configs(
 
 
 def run_nvchecker(conf_dir: str = '.', matrix_dir: str = '.', oldvers: dict = None,
-                  logging='info', logger='pretty', version=False) -> Tuple[dict, bool, set, set]:
+                  logging='warning', logger='pretty', version=False) -> Tuple[dict, bool, set, set]:
     """
     Modified way to run nvchecker in program
     return: new_ver, has_failure
