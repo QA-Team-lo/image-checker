@@ -115,7 +115,7 @@ def load_all_configs(
             if os.path.isdir(cur_matrix2):
                 if not os.path.exists(cur_conf2):
                     # logger.warning(
-                        # "Config directory %s does not exist, skipping", cur_conf2)
+                    # "Config directory %s does not exist, skipping", cur_conf2)
                     skipped.add(cur_conf2)
                     continue
                 q.put((cur_conf2, cur_matrix2))
@@ -125,10 +125,11 @@ def load_all_configs(
             cur_conf2 = os.path.join(cur_conf, f)
             if not os.path.isfile(cur_conf2):
                 continue
-            if f != 'config.yaml' and f != 'config.toml' and f != 'config.json':
+            if f not in ('config.yaml', 'config.yml', 'config.toml', 'config.json'):
+                skipped.add(cur_conf2)
                 continue
             conf = None
-            if f == 'config.yaml':
+            if f in ('config.yaml', 'config.yml'):
                 with open(cur_conf2, 'r', encoding='utf-8') as f:
                     try:
                         conf = yaml.load(f, Loader=yaml.FullLoader)
@@ -154,6 +155,7 @@ def load_all_configs(
                         continue
             if not conf:
                 logger.warning("Config file %s is empty, skipping", cur_conf2)
+                skipped.add(cur_conf2)
                 continue
             res = merge_configs(res, conf)
     return skipped, res
