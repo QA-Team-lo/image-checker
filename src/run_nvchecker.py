@@ -92,7 +92,7 @@ def merge_configs(
 def load_all_configs(
     conf_dir: str = '.',
     matrix_dir: str = '.',
-) -> tuple[set, dict]:
+) -> tuple[dict, set, set]:
     skip_dirs = ['.', '..', 'report-template',
                  'assets', '.git', '.github', '.venv']
 
@@ -101,18 +101,21 @@ def load_all_configs(
     q.put((conf_dir, matrix_dir))
 
     skipped = set()
+    manually_skipped = set()
 
     # matrix as base directory
     # iterate all sub directories, layer by layer
     while not q.empty():
         cur_conf, cur_matrix = q.get()
         sub_dirs = os.listdir(cur_matrix)
+        has_sub_dirs = False
         for f in sub_dirs:
             if f in skip_dirs:
                 continue
             cur_conf2 = os.path.join(cur_conf, f)
             cur_matrix2 = os.path.join(cur_matrix, f)
             if os.path.isdir(cur_matrix2):
+                has_sub_dirs = True
                 if not os.path.exists(cur_conf2):
                     # logger.warning(
                     # "Config directory %s does not exist, skipping", cur_conf2)
@@ -121,6 +124,7 @@ def load_all_configs(
                 q.put((cur_conf2, cur_matrix2))
 
         sub_confs = os.listdir(cur_conf)
+        has_sub_confs = False
         for f in sub_confs:
             cur_conf2 = os.path.join(cur_conf, f)
             if not os.path.isfile(cur_conf2):
@@ -129,6 +133,7 @@ def load_all_configs(
                 skipped.add(cur_conf2)
                 continue
             conf = None
+            has_sub_confs = True
             if f in ('config.yaml', 'config.yml'):
                 with open(cur_conf2, 'r', encoding='utf-8') as f:
                     try:
@@ -153,16 +158,29 @@ def load_all_configs(
                         logger.error(
                             "Failed to parse JSON file %s: %s", cur_conf2, e)
                         continue
-            if not conf:
+            if not conf or len(conf) == 0:
                 logger.warning("Config file %s is empty, skipping", cur_conf2)
                 skipped.add(cur_conf2)
                 continue
+            if conf.get('eol', False):
+                continue
+            if conf.get('skip', False):
+                logger.info("Skipping config %s", cur_conf2)
+                reason = conf.get('reason', 'No reason provided')
+                manually_skipped.add(
+                    (cur_conf2, reason))
+                continue
             res = merge_configs(res, conf)
-    return skipped, res
+        
+        if not has_sub_confs and not has_sub_dirs:
+            logger.warning(
+                "No config files found in %s, skipping", cur_conf)
+            skipped.add(cur_conf)
+    return res, skipped, manually_skipped
 
 
 def run_nvchecker(conf_dir: str = '.', matrix_dir: str = '.', oldvers: dict = None,
-                  logging='info', logger='pretty', version=False) -> Tuple[dict, bool, set]:
+                  logging='info', logger='pretty', version=False) -> Tuple[dict, bool, set, set]:
     """
     Modified way to run nvchecker in program
     return: new_ver, has_failure
@@ -177,7 +195,7 @@ def run_nvchecker(conf_dir: str = '.', matrix_dir: str = '.', oldvers: dict = No
     if core.process_common_arguments(args):
         return
 
-    skipped, confs = load_all_configs(
+    confs, skipped, manually_skipped = load_all_configs(
         conf_dir=conf_dir,
         matrix_dir=matrix_dir
     )
@@ -210,7 +228,7 @@ def run_nvchecker(conf_dir: str = '.', matrix_dir: str = '.', oldvers: dict = No
 
     new_vers = dict(sorted(results.items()))
 
-    return (new_vers, has_failures, skipped)
+    return (new_vers, has_failures, skipped, manually_skipped)
 
 
 if __name__ == '__main__':

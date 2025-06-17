@@ -16,7 +16,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def gen_report(newer, skipped):
+def gen_report(newer, skipped, manually_skipped):
     """
     Generate a report of the new versions found
     """
@@ -51,6 +51,18 @@ These products doesn't have any configs! You need to add them later.
     for p in skipped:
         res += f"| {p} |\n"
 
+    res += """
+## Manually Skipped Products
+These products were manually skipped and will not be checked for updates.
+Please check them manually.
+| Path | Reason |
+| ---- | ------ |
+"""
+    for p in manually_skipped:
+        res += f"| {p[0]} | {p[1]} |\n"
+
+    res += "\n\n"
+
     return res
 
 
@@ -76,7 +88,7 @@ def main():
 
     old = gen_old(matrix)
 
-    new, fail, skipped = run_nvchecker(
+    new, fail, skipped, manually_skipped = run_nvchecker(
         conf_dir=args.path, matrix_dir=args.matrix, oldvers=old)
     if fail:
         logger.exception("Failed to run nvchecker: %s", fail)
@@ -103,7 +115,7 @@ def main():
     if has_update:
         logger.info("Update available")
 
-    report = gen_report(upd, skipped)
+    report = gen_report(upd, skipped, manually_skipped)
 
     with open(args.report, 'w', encoding='utf-8') as f:
         f.write(report)

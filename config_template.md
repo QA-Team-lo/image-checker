@@ -51,3 +51,19 @@ v1
 
 For any specific case, modify the function in src/utils.py:gen_old to suit your needs. However, better not have so many special cases?
 
+# How to skip one image?
+
+There are two ways to skip an image:
+- Manually skip: Indicate the image is checked manually.
+- EOL skip: Indicate the image is EOL, we would not check it anymore.
+
+For manual skip, a note will be added to the report, add it like this:
+```yaml
+skip: true
+reason: "Any reason you want to skip this image, Optional, but recommended to add."
+```
+
+For EOL skip, no note will provided, add it like this:
+```yaml
+eol: true
+```
