@@ -8,10 +8,12 @@ import logging
 from matrix.assets.src.matrix_parser import Systems
 from src.run_nvchecker import run_nvchecker
 from src.version_cmp import filter_newer
-from src.utils import gen_old
+from src.utils import gen_old, SelfRichResult
+from src.config import config
+import src.github_action as gh
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.WARNING,
 )
 logger = logging.getLogger(__name__)
 
@@ -27,8 +29,8 @@ def gen_report(newer, skipped, manually_skipped):
 
 ## New Versions Found
 
-| Product Triple | Old Version | New Version |
-| -------------- | ----------- | ----------- |
+| Product Triple | Product:System:Variant | Old Version | New Version |
+| -------------- | ---------------------- | ----------- | ----------- |
 """
 
     for prod, ver in newer.items():
@@ -37,7 +39,8 @@ def gen_report(newer, skipped, manually_skipped):
         trip = prod
         old_s = ver['old'].version if ver['old'] else "N/A"
         new_s = ver['new'].version if ver['new'] else "N/A"
-        res += f"| {trip} | {old_s} | {new_s} |\n"
+        p_s_v = f"{ver['old'].vinfo.product}:{ver['old'].vinfo.system}:{ver['old'].vinfo.variant}"
+        res += f"| {trip} | {p_s_v} | {old_s} | {new_s} |\n"
 
     res += """
 ## Skipped Products
@@ -71,55 +74,55 @@ def main():
     Main function
     """
 
-    arg = argparse.ArgumentParser()
-    arg.add_argument(
-        '-m', '--matrix', help='path to the support matrix', default='./matrix')
-    arg.add_argument(
-        '-p', '--path', help='path to the config directory',
-        default='./configs'
-    )
-    arg.add_argument(
-        '-r', '--report', help='path to the report file',
-        default='./report.md'
-    )
-    args = arg.parse_args()
-
-    matrix = Systems(args.matrix)
+    matrix = Systems(config["matrix"])
 
     old = gen_old(matrix)
 
     new, fail, skipped, manually_skipped = run_nvchecker(
-        conf_dir=args.path, matrix_dir=args.matrix, oldvers=old)
+        conf_dir=config["path"], matrix_dir=config["matrix"], oldvers=old)
     if fail:
         logger.exception("Failed to run nvchecker: %s", fail)
         sys.exit(-1)
 
     upd = filter_newer(old, new)
 
-    has_update = False
-    for prod, ver in upd.items():
-        if ver['old'] is None:
-            logger.info(
-                "Found new version for %s: %s", prod, ver['new'].version)
-            has_update = True
-        elif ver['new'] is None:
-            # logger.info(
-            # "No new version found for %s", prod)
-            continue
-        else:
-            logger.info(
-                "Can be updated for %s: %s -> %s",
-                prod, ver['old'].version, ver['new'].version)
-            has_update = True
-
-    if has_update:
-        logger.info("Update available")
-
     report = gen_report(upd, skipped, manually_skipped)
 
-    with open(args.report, 'w', encoding='utf-8') as f:
+    with open(config["report"], 'w', encoding='utf-8') as f:
         f.write(report)
-        logger.info("Report written to %s", args.report)
+        logger.info("Report written to %s", config["report"])
+
+    if config["GITHUB_TOKEN"] is not None:
+        github = gh.GithubManager(config["GITHUB_TOKEN"])
+    else:
+        github = None
+
+    if config["issue"] and github is not None:
+        logger.info("Creating issue in %s", config["ISSUE_REPO"])
+        repo = gh.GithubRepoManager(github, config["ISSUE_REPO"])
+
+        issues = repo.get_all_issues()
+        for prod, ver in upd.items():
+            if ver['new'] is None:
+                continue
+            old_res: SelfRichResult = ver['old']
+            title = f"[Image Check] {old_res.vinfo.product}:{old_res.vinfo.system} has new version {ver["new"].version}"
+            old_s = ver['old'].version if ver['old'] else "N/A"
+            body = f"New version for {old_res.vinfo.product}:{old_res.vinfo.system}:{old_res.vinfo.variant} found: {old_s} -> {ver["new"].version}\n\n"
+
+            for issue in issues:
+                if title in issue.title:
+                    logger.info("Issue already exists: %s", issue.title)
+                    break
+            else:
+                issue = gh.Issue(title=title, body=body,
+                                 labels=["image-check"])
+                url = repo.create_issue(issue)
+                if url:
+                    logger.info("Issue created: %s", url)
+                    issues.append(issue)
+                else:
+                    logger.error("Failed to create issue for %s", prod)
 
 
 if __name__ == '__main__':

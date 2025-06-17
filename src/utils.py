@@ -1,5 +1,17 @@
-from matrix.assets.src.matrix_parser import Systems, gen_oldver
+from dataclasses import dataclass
+
 from nvchecker.core import RichResult
+
+from matrix.assets.src.matrix_parser import Systems, gen_oldver, SystemInfo
+
+
+@dataclass
+class SelfRichResult(RichResult):
+    """
+    A class to represent a rich result with additional attributes.
+    Inherits from RichResult.
+    """
+    vinfo: SystemInfo
 
 
 def gen_old(matrix) -> dict[str, RichResult]:
@@ -19,7 +31,8 @@ def gen_old(matrix) -> dict[str, RichResult]:
         if vinfo.variant is None:
             vinfo.variant = "null"
         for b_variant in b_variants:
-            res[f"{vinfo.vendor}-{b_variant}-{vinfo.system}-{vinfo.variant}"] = RichResult(
-                version=vinfo.version
+            res[f"{vinfo.vendor}-{b_variant}-{vinfo.system}-{vinfo.variant}"] = SelfRichResult(
+                version=vinfo.version,
+                vinfo=vinfo,
             )
     return res

@@ -11,6 +11,17 @@ def version_cmp(v1: str, v2: str) -> int:
     """
     v1 = AwesomeVersion(v1)
     v2 = AwesomeVersion(v2)
+
+    # replace all space in version strings with '-'
+    v1 = v1.replace(" ", "-")
+    v2 = v2.replace(" ", "-")
+
+    # remove the 'v' prefix if it exists
+    if v1.startswith("v"):
+        v1 = v1[1:]
+    if v2.startswith("v"):
+        v2 = v2[1:]
+
     if v1 > v2:
         return 1
     if v1 < v2:
