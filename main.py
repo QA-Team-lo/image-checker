@@ -3,7 +3,6 @@ Check for updates in the matrix
 """
 
 import sys
-import argparse
 import logging
 from matrix.assets.src.matrix_parser import Systems
 from src.run_nvchecker import run_nvchecker
@@ -47,12 +46,13 @@ def gen_report(newer, skipped, manually_skipped):
 
 These products doesn't have any configs! You need to add them later.
 
-| Path |
-| ---- |
+| Path | Matrix |
+| ---- | ------ |
 """
 
     for p in skipped:
-        res += f"| {p} |\n"
+        mat_p=p.replace("configs/", "matrix/")
+        res += f"| [{p}]({p}) | [{mat_p}]({mat_p})  |\n"
 
     res += """
 ## Manually Skipped Products
@@ -62,7 +62,7 @@ Please check them manually.
 | ---- | ------ |
 """
     for p in manually_skipped:
-        res += f"| {p[0]} | {p[1]} |\n"
+        res += f"| [{p[0]}]({p[0]}) | {p[1]} |\n"
 
     res += "\n\n"
 
