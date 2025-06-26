@@ -19,6 +19,8 @@ from nvchecker.util import KeyManager, Entries
 from nvchecker.core import Options
 from nvchecker.util import ResultData, RawResult, EntryWaiter
 
+from matrix.assets.src.matrix_parser import Systems, gen_oldver
+
 logger = logging.getLogger(__name__)
 
 
@@ -96,6 +98,12 @@ def load_all_configs(
     skip_dirs = ['.', '..', 'report-template',
                  'assets', '.git', '.github', '.venv']
 
+    systems = Systems(matrix_dir)
+    vinfos = gen_oldver(systems)
+    vinfo_path_mapper = {
+        '/'.join(vinfo.raw_data.link[:-1]): vinfo for vinfo in vinfos
+    }
+
     res = {}
     q = queue.Queue()
     q.put((conf_dir, matrix_dir))
@@ -107,21 +115,7 @@ def load_all_configs(
     # iterate all sub directories, layer by layer
     while not q.empty():
         cur_conf, cur_matrix = q.get()
-        sub_dirs = os.listdir(cur_matrix)
-        has_sub_dirs = False
-        for f in sub_dirs:
-            if f in skip_dirs:
-                continue
-            cur_conf2 = os.path.join(cur_conf, f)
-            cur_matrix2 = os.path.join(cur_matrix, f)
-            if os.path.isdir(cur_matrix2):
-                has_sub_dirs = True
-                if not os.path.exists(cur_conf2):
-                    # logger.warning(
-                    # "Config directory %s does not exist, skipping", cur_conf2)
-                    skipped.add(cur_conf2)
-                    continue
-                q.put((cur_conf2, cur_matrix2))
+        cur_rel_path = os.path.relpath(cur_conf, conf_dir)
 
         sub_confs = os.listdir(cur_conf)
         has_sub_confs = False
@@ -158,6 +152,13 @@ def load_all_configs(
                         logger.error(
                             "Failed to parse JSON file %s: %s", cur_conf2, e)
                         continue
+
+            # skip all embedded systems
+            if vinfo_path_mapper.get(cur_rel_path) is not None:
+                cur_vinfo = vinfo_path_mapper[cur_rel_path]
+                if cur_vinfo.system in systems.rtos:
+                    continue
+
             if not conf or len(conf) == 0:
                 logger.warning("Config file %s is empty, skipping", cur_conf2)
                 skipped.add(cur_conf2)
@@ -171,10 +172,33 @@ def load_all_configs(
                     (cur_conf2, reason))
                 continue
             res = merge_configs(res, conf)
-        
+
+        sub_dirs = os.listdir(cur_matrix)
+        has_sub_dirs = False
+        for f in sub_dirs:
+            if f in skip_dirs:
+                continue
+            cur_conf2 = os.path.join(cur_conf, f)
+            cur_matrix2 = os.path.join(cur_matrix, f)
+            cur_rel_path2 = os.path.relpath(cur_conf2, conf_dir)
+            if not os.path.isdir(cur_matrix2):
+                continue
+
+            # Second, if all systems in the current dir are embedded systems, skip it
+            all_subsystems = [
+                v for k, v in vinfo_path_mapper.items() if cur_rel_path2 in k]
+            if all(v.system in systems.rtos for v in all_subsystems):
+                continue
+
+            has_sub_dirs = True
+            if not os.path.exists(cur_conf2):
+                # logger.warning(
+                # "Config directory %s does not exist, skipping", cur_conf2)
+                skipped.add(cur_conf2)
+                continue
+            q.put((cur_conf2, cur_matrix2))
+
         if not has_sub_confs and not has_sub_dirs:
-            logger.warning(
-                "No config files found in %s, skipping", cur_conf)
             skipped.add(cur_conf)
     return res, skipped, manually_skipped
 
