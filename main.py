@@ -38,7 +38,7 @@ def gen_report(newer, skipped, manually_skipped):
         trip = prod
         old_s = ver['old'].version if ver['old'] else "N/A"
         new_s = ver['new'].version if ver['new'] else "N/A"
-        p_s_v = f"{ver['old'].vinfo.product}:{ver['old'].vinfo.system}:{ver['old'].vinfo.variant}"
+        p_s_v = f"{ver['old'].vinfo.product}:{ver['old'].vinfo.system}:{ver['old'].vinfo.variant}" if ver['old'] else "N/A"
         res += f"| {trip} | {p_s_v} | {old_s} | {new_s} |\n"
 
     res += """
