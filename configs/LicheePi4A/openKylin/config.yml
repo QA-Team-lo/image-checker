@@ -1,0 +1,7 @@
+"null":
+  source: htmlparser
+  url: https://www.openkylin.top/downloads/index-cn.html
+  xpath: /html/body/section/div/div/div/div[2]/div/div/h5
+  include_regex: 'openKylin (.*) RISC-V'
+  from_pattern: 'openKylin (.*) RISC-V'
+  to_pattern: '\1'
