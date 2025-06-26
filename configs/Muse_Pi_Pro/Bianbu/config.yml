@@ -1,0 +1,4 @@
+"null":
+  source: regex
+  url: https://archive.spacemit.com/image/k1/version/bianbu-computer-uefi/
+  regex: <a href="(.*)/">\1/</a>

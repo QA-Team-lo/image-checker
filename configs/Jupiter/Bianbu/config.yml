@@ -1,0 +1,4 @@
+desktop:
+  source: regex
+  url: https://archive.spacemit.com/image/k1/version/bianbu/
+  regex: <a href="(.*)/">\1/</a>
