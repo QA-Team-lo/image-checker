@@ -50,7 +50,7 @@ def is_same(v1: str, v2: str) -> bool:
     return version_cmp(v1, v2) == 0
 
 
-def filter_newer(oldvers: dict[RichResult], newvers: dict[RichResult]) -> dict[RichResult]:
+def filter_newer(oldvers: dict[str, RichResult], newvers: dict[str, RichResult]) -> dict[RichResult]:
     """
     Filter out the newer versions
     """

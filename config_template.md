@@ -28,6 +28,11 @@ The above example uses the regex plugin to check the version from a URL, It will
 
 # How the name is formatted
 
+For simple cases, only one variant is used is permitted. However, the config file **MUST** has a same path as the corresponding matrix file, and the name is formatted as:
+```
+{variant}
+```
+
 For general case, the name is formatted as:
 ```
 {vendor}-generic-{system}-{variant}

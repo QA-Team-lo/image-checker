@@ -19,7 +19,9 @@ from nvchecker.util import KeyManager, Entries
 from nvchecker.core import Options
 from nvchecker.util import ResultData, RawResult, EntryWaiter
 
-from matrix.assets.src.matrix_parser import Systems, gen_oldver
+from matrix.assets.src.matrix_parser import Systems, gen_oldver, SystemInfo
+
+from .utils import gen_item_name
 
 logger = logging.getLogger(__name__)
 
@@ -78,16 +80,33 @@ def load_config_from_dict(config: dict, working_dir: str = None):
 
 def merge_configs(
         a: dict, b: dict) -> dict:
-
-    # if b[skip] exists and is true, skip merging
-    if b.get('skip', False):
-        return a
-
     for k, v in b.items():
         if isinstance(v, dict) and k in a and isinstance(a[k], dict):
             a[k] = merge_configs(a[k], v)
         else:
             a[k] = v
+    return a
+
+
+def try_merge_simple_configs(
+        a: dict, b: dict, vinfo: SystemInfo | None = None) -> dict:
+    if vinfo is None:
+        # If no vinfo is provided, just merge the configs
+        return merge_configs(a, b)
+    for k, v in b.items():
+        if isinstance(v, dict) and k in a and isinstance(a[k], dict):
+            a[k] = merge_configs(a[k], v)
+        else:
+            # if there are less than 3 `-` in the key, we assume it is a simple key
+            if k.count('-') < 3:
+                full_names = gen_item_name(
+                    vinfo,
+                    overwrite_variant=k
+                )
+                for n in full_names:
+                    a[n] = v
+            else:
+                a[k] = v
     return a
 
 
@@ -116,6 +135,7 @@ def load_all_configs(
     while not q.empty():
         cur_conf, cur_matrix = q.get()
         cur_rel_path = os.path.relpath(cur_conf, conf_dir)
+        skip_sub = False
 
         sub_confs = os.listdir(cur_conf)
         has_sub_confs = False
@@ -164,15 +184,20 @@ def load_all_configs(
                 skipped.add(cur_conf2)
                 continue
             if conf.get('eol', False):
+                skip_sub = True
                 continue
             if conf.get('skip', False):
                 logger.info("Skipping config %s", cur_conf2)
                 reason = conf.get('reason', 'No reason provided')
                 manually_skipped.add(
                     (cur_conf2, reason))
+                skip_sub = True
                 continue
-            res = merge_configs(res, conf)
+            res = try_merge_simple_configs(
+                res, conf, vinfo_path_mapper.get(cur_rel_path, None))
 
+        if skip_sub:
+            continue
         sub_dirs = os.listdir(cur_matrix)
         has_sub_dirs = False
         for f in sub_dirs:
