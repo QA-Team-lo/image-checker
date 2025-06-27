@@ -1,0 +1,4 @@
+"null":
+  source: "regex"
+  url: "https://fast-mirror.isrc.ac.cn/revyos/extra/images/meles/"
+  regex: '<a href="(\d{8})/">\1/</a>'
